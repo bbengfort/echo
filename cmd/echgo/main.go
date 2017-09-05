@@ -22,7 +22,7 @@ func main() {
 
 	// Instantiate the command line application
 	app := cli.NewApp()
-	app.Name = "echo"
+	app.Name = "echgo"
 	app.Version = "0.1"
 	app.Usage = "run gRPC echo server and client"
 
