@@ -1,0 +1,14 @@
+// Defines a message on the network
+
+syntax = "proto3";
+
+package msg;
+
+message BasicMessage {
+    string sender = 1;
+    string message = 2;
+}
+
+service Hello {
+    rpc Respond (BasicMessage) returns (BasicMessage) {}
+}
