@@ -47,6 +47,11 @@ func main() {
 					Name:  "u, uptime",
 					Usage: "pass a parsable duration to shut the server down after",
 				},
+				cli.StringFlag{
+					Name:  "o, outpath",
+					Usage: "path to write metrics out to",
+					Value: "metrics.json",
+				},
 				cli.UintFlag{
 					Name:  "verbosity",
 					Usage: "set log level from 0-4, lower is more verbose",
@@ -164,7 +169,7 @@ func serve(c *cli.Context) error {
 	}
 
 	// Defer the shutdown
-	defer server.Shutdown()
+	defer server.Shutdown(c.String("outpath"))
 
 	// If uptime is specified, set a fixed duration for the server to run.
 	if uptime := c.String("uptime"); uptime != "" {
@@ -174,7 +179,7 @@ func serve(c *cli.Context) error {
 		}
 
 		time.AfterFunc(d, func() {
-			server.Shutdown()
+			server.Shutdown(c.String("outpath"))
 			os.Exit(0)
 		})
 	}

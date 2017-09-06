@@ -17,15 +17,18 @@ func NewServer(addr, name string) (*Server, error) {
 }
 
 type Server struct {
-	name   string // host information for the server
-	addr   string // address to bind the server to
-	nSent  uint64 // number of messages sent
-	nRecv  uint64 // number of messages received
-	nBytes uint64 // number of bytes sent
+	name    string   // host information for the server
+	addr    string   // address to bind the server to
+	nSent   uint64   // number of messages sent
+	nRecv   uint64   // number of messages received
+	nBytes  uint64   // number of bytes sent
+	metrics *Metrics // keep track of server side statistics
 }
 
 func (s *Server) Init(addr, name string) {
 	s.addr = addr
+	s.metrics = new(Metrics)
+	s.metrics.Init()
 
 	// if name is empty string, set it to the hostname
 	if name == "" {
@@ -41,7 +44,7 @@ func (s *Server) Run() error {
 	}
 	defer sock.Close()
 
-	info("listening for requests on %s", s.addr)
+	status("bound grpc server to %s with tcp socket", s.addr)
 
 	// Create the grpc server, handler, and listen
 	srv := grpc.NewServer()
@@ -49,7 +52,12 @@ func (s *Server) Run() error {
 	return srv.Serve(sock)
 }
 
-func (s *Server) Shutdown() error {
+func (s *Server) Shutdown(path string) error {
+	status("%s", s.metrics)
+	if path != "" {
+		extra := map[string]interface{}{"server": "grpc"}
+		return s.metrics.Write(path, extra)
+	}
 	return nil
 }
 
@@ -58,6 +66,7 @@ func (s *Server) Respond(ctx context.Context, in *pb.BasicMessage) (*pb.BasicMes
 	// Log that we've received the message
 	s.nRecv++
 	info("received: %s\n", in.String())
+	s.metrics.Increment(in.Sender)
 
 	// Construct the reply
 	reply := &pb.BasicMessage{
@@ -67,5 +76,6 @@ func (s *Server) Respond(ctx context.Context, in *pb.BasicMessage) (*pb.BasicMes
 
 	// Send the reply
 	s.nSent++
+	s.metrics.Complete()
 	return reply, nil
 }
